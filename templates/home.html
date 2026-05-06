@@ -3,41 +3,459 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>California House Price Intelligence</title>
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --bg-deep: #d9e4dc;
+            --surface: rgba(255, 255, 255, 0.78);
+            --surface-strong: #ffffff;
+            --text: #16302b;
+            --muted: #58746d;
+            --accent: #b65b2a;
+            --accent-2: #245b57;
+            --border: rgba(22, 48, 43, 0.12);
+            --shadow: 0 24px 70px rgba(22, 48, 43, 0.14);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(182, 91, 42, 0.18), transparent 30%),
+                radial-gradient(circle at top right, rgba(36, 91, 87, 0.16), transparent 26%),
+                linear-gradient(160deg, var(--bg) 0%, #eef5ef 48%, var(--bg-deep) 100%);
+        }
+
+        .page {
+            position: relative;
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 48px;
+            max-height: 100%;
+        }
+
+        .ambient {
+            position: fixed;
+            inset: auto;
+            pointer-events: none;
+            filter: blur(18px);
+            opacity: 0.7;
+            z-index: 0;
+        }
+
+        .ambient-one {
+            top: -70px;
+            left: -90px;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: rgba(182, 91, 42, 0.22);
+        }
+
+        .ambient-two {
+            right: -80px;
+            bottom: 30px;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: rgba(36, 91, 87, 0.18);
+        }
+
+        .hero {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 18px;
+            padding: 24px 6px 30px;
+        }
+
+        .eyebrow {
+            margin: 0;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font: 600 0.78rem/1.2 Arial, sans-serif;
+            color: var(--accent-2);
+        }
+
+        h1 {
+            margin: 0;
+            max-width: 20ch;
+            font-size: clamp(2.2rem, 3.6vw, 3.5rem);
+            line-height: 1.02;
+            letter-spacing: -0.06em;
+        }
+
+        .lede {
+            margin: 0;
+            max-width: 80%;
+            font: 400 clamp(1.02rem, 1vw + 0.85rem, 1.18rem)/1.65 Arial, sans-serif;
+            color: var(--muted);
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 6px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .chips li {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.54);
+            font: 600 0.85rem/1 Arial, sans-serif;
+            color: var(--text);
+            box-shadow: 0 8px 24px rgba(22, 48, 43, 0.05);
+        }
+
+        .grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+            gap: 24px;
+            align-items: start;
+            margin-top: 18px;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow);
+        }
+
+        .form-panel {
+            padding: 28px;
+        }
+
+        .panel-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .panel-title h2 {
+            margin: 0;
+            font-size: clamp(1.4rem, 1.8vw, 2rem);
+        }
+
+        .panel-title span {
+            font: 600 0.8rem/1 Arial, sans-serif;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        form {
+            display: grid;
+            gap: 16px;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field label {
+            font: 700 0.88rem/1 Arial, sans-serif;
+            color: var(--text);
+        }
+
+        .field input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid rgba(22, 48, 43, 0.14);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--text);
+            font: 400 1rem/1.2 Arial, sans-serif;
+            outline: none;
+            transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+
+        .field input::placeholder {
+            color: #8ca09a;
+        }
+
+        .field input:focus {
+            border-color: rgba(36, 91, 87, 0.45);
+            box-shadow: 0 0 0 4px rgba(36, 91, 87, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .actions button {
+            appearance: none;
+            border: 0;
+            border-radius: 999px;
+            padding: 14px 22px;
+            background: linear-gradient(135deg, var(--accent) 0%, #9f4422 100%);
+            color: #fff;
+            font: 700 0.95rem/1 Arial, sans-serif;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            box-shadow: 0 16px 30px rgba(182, 91, 42, 0.28);
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .actions button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 34px rgba(182, 91, 42, 0.34);
+        }
+
+        .actions small {
+            color: var(--muted);
+            font: 400 0.92rem/1.5 Arial, sans-serif;
+        }
+
+        .result {
+            margin-top: 18px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border: 1px solid rgba(36, 91, 87, 0.16);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .result-label {
+            margin: 0 0 6px;
+            font: 700 0.8rem/1 Arial, sans-serif;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-2);
+        }
+
+        .result p {
+            margin: 0;
+            font: 600 1rem/1.6 Arial, sans-serif;
+        }
+
+        .sidebar {
+            display: grid;
+            gap: 18px;
+        }
+
+        .info-card {
+            padding: 24px;
+        }
+
+        .info-card h3 {
+            margin: 0 0 10px;
+            font-size: 1.2rem;
+        }
+
+        .info-card p,
+        .info-card li {
+            margin: 0;
+            color: var(--muted);
+            font: 400 0.98rem/1.7 Arial, sans-serif;
+        }
+
+        .info-list {
+            margin: 14px 0 0;
+            padding: 0 0 0 18px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .mini-stat {
+            display: grid;
+            gap: 6px;
+            padding: 20px 22px;
+            background: var(--surface-strong);
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            box-shadow: 0 12px 30px rgba(22, 48, 43, 0.08);
+        }
+
+        .mini-stat strong {
+            font-size: 1.6rem;
+            letter-spacing: -0.04em;
+        }
+
+        .mini-stat span {
+            color: var(--muted);
+            font: 600 0.84rem/1.4 Arial, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        footer {
+            position: relative;
+            z-index: 1;
+            margin-top: 22px;
+            padding: 0 6px;
+            color: rgba(22, 48, 43, 0.7);
+            font: 400 0.88rem/1.6 Arial, sans-serif;
+        }
+
+        @media (max-width: 920px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page {
+                width: min(100% - 18px, 1180px);
+                padding-top: 18px;
+            }
+
+            h1 {
+                max-width: 14ch;
+                font-size: clamp(2.2rem, 8vw, 3.1rem);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .form-panel,
+            .info-card {
+                padding: 20px;
+            }
+
+            .field-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>
-        California House Price Prediction
-    </h1>
-    <!-- {
-    "data":{
-        'MedInc':1.6812,  
-        'HouseAge':25.0,  
-        'AveRooms':4.192201, 
-        'AveBedrms':1.022284, 
-        'Population':1392.0,
-        'AveOccup':3.877437,
-        'Latitude':36.06, 
-        'Longitude':-119.01
-        }
-        } -->
-    <form action="{{url_for('predict')}}"method="post">
-        <input type="text" name="MedInc" placeholder="MedInc" required="required"/><br>
-        <input type="text" name="HouseAge" placeholder="HouseAge" required="required"/><br>
-        <input type="text" name="AveRooms" placeholder="AveRooms" required="required"/><br>
-        <input type="text" name="AveBedrms" placeholder="AveBedrms" required="required"/><br>
-        <input type="text" name="Population" placeholder="Population" required="required"/><br>
-        <input type="text" name="AveOccup" placeholder="AveOccup" required="required"/><br>
-        <input type="text" name="Latitude" placeholder="Latitude" required="required"/><br>
-        <input type="text" name="Longitude" placeholder="Longitude" required="required"/><br>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="page">
+        <header class="hero">
+            <p class="eyebrow">California housing model</p>
+            <h1>Estimate property value with a clearer, calmer workflow.</h1>
+            <p class="lede">A polished price-estimation dashboard for exploring the core signals behind California home prices. Enter the eight model features, review the output, and iterate with confidence.</p>
+            <ul class="chips" aria-label="Model highlights">
+                <li>8 model inputs</li>
+                <li>Fast Flask inference</li>
+                <li>Responsive interface</li>
+                <li>Render-ready container</li>
+            </ul>
+        </header>
 
+        <main class="grid">
+            <section class="panel form-panel" aria-labelledby="estimate-heading">
+                <div class="panel-title">
+                    <h2 id="estimate-heading">House price estimate</h2>
+                    <span>Scikit-learn model</span>
+                </div>
 
-        <button type="submit" name="submit" class="btn btn-primary btn-block btn-large">Predict</button>
-    </form>
-    {% if prediction_text %}
-    <div id="prediction">
-        <p>{{ prediction_text }}</p>
+                <form action="{{ url_for('predict') }}" method="post" autocomplete="off">
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="MedInc">Median income</label>
+                            <input id="MedInc" type="number" step="any" name="MedInc" placeholder="Example: 3.52" required>
+                        </div>
+                        <div class="field">
+                            <label for="HouseAge">House age</label>
+                            <input id="HouseAge" type="number" step="any" name="HouseAge" placeholder="Example: 18" required>
+                        </div>
+                        <div class="field">
+                            <label for="AveRooms">Average rooms</label>
+                            <input id="AveRooms" type="number" step="any" name="AveRooms" placeholder="Example: 5.42" required>
+                        </div>
+                        <div class="field">
+                            <label for="AveBedrms">Average bedrooms</label>
+                            <input id="AveBedrms" type="number" step="any" name="AveBedrms" placeholder="Example: 1.08" required>
+                        </div>
+                        <div class="field">
+                            <label for="Population">Population</label>
+                            <input id="Population" type="number" step="any" name="Population" placeholder="Example: 1200" required>
+                        </div>
+                        <div class="field">
+                            <label for="AveOccup">Average occupancy</label>
+                            <input id="AveOccup" type="number" step="any" name="AveOccup" placeholder="Example: 3.1" required>
+                        </div>
+                        <div class="field">
+                            <label for="Latitude">Latitude</label>
+                            <input id="Latitude" type="number" step="any" name="Latitude" placeholder="Example: 37.77" required>
+                        </div>
+                        <div class="field">
+                            <label for="Longitude">Longitude</label>
+                            <input id="Longitude" type="number" step="any" name="Longitude" placeholder="Example: -122.42" required>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit">Generate estimate</button>
+                        <small>All fields are required. The model expects numeric values only.</small>
+                    </div>
+                </form>
+
+                
+                <div class="result" role="status" aria-live="polite">
+                    <p class="result-label">Result</p>
+                    {% if prediction_text %}
+                    <p>{{ prediction_text }}</p>
+                    {% else %}
+                    <p>Waiting for input...</p>
+                    {% endif %}
+                </div>
+                
+            </section>
+
+            <aside class="sidebar">
+                <section class="panel info-card">
+                    <h3>What the model uses</h3>
+                    <p>The estimator combines neighborhood density, property age, and location coordinates to produce a quick price signal.</p>
+                    <ul class="info-list">
+                        <li>Designed for fast manual inputs.</li>
+                        <li>Best used for rough comparisons, not appraisals.</li>
+                        <li>Works in the browser and in Render containers.</li>
+                    </ul>
+                </section>
+
+                <div class="mini-stat">
+                    <span>Inputs</span>
+                    <strong>8</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>Deployment</span>
+                    <strong>Docker</strong>
+                </div>
+
+                <div class="mini-stat">
+                    <span>Backend</span>
+                    <strong>Flask</strong>
+                </div>
+            </aside>
+        </main>
+
+        <footer>
+            Built for quick experimentation with a cleaner interface and a simple deployment path.
+        </footer>
     </div>
-    {% endif %}
 </body>
 </html>
