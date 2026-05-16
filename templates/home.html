@@ -241,6 +241,39 @@
             border: 1px solid rgba(36,91,87,0.08);
         }
 
+        /* Button loading/spinner */
+        .btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.18);
+            border-top-color: rgba(255,255,255,0.95);
+            animation: spin 800ms linear infinite;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 160ms ease, transform 160ms ease;
+        }
+
+        .btn.loading .spinner {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .btn[disabled] {
+            cursor: progress;
+            opacity: 0.92;
+            transform: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .actions small {
             color: var(--muted);
             font: 400 0.92rem/1.5 Arial, sans-serif;
@@ -469,8 +502,8 @@
                     </div>
 
                     <div class="actions">
-                        <button type="submit">Generate estimate</button>
-                        <button id="random-sample" type="button" class="button">Random sample</button>
+                        <button type="submit" class="btn primary"><span class="spinner" aria-hidden="true"></span><span class="btn-text">Generate estimate</span></button>
+                        <button id="random-sample" type="button" class="button btn"><span class="spinner" aria-hidden="true"></span><span class="btn-text">Random sample</span></button>
                         <small>All fields are required. The model expects numeric values only.</small>
                     </div>
                 </form>
@@ -529,6 +562,10 @@
                         const keys = ['MedInc','HouseAge','AveRooms','AveBedrms','Population','AveOccup','Latitude','Longitude'];
                         const data = {};
                         for (const k of keys) data[k] = parseFloat(formData.get(k));
+                        const submitBtn = form.querySelector('[type="submit"]');
+                        // set loading state
+                        if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('loading'); }
+                        if (randomBtn) { randomBtn.disabled = true; randomBtn.classList.add('loading'); }
                         try {
                             const resp = await fetch('/predict_api', {
                                 method: 'POST', headers: {'Content-Type':'application/json'},
@@ -548,12 +585,17 @@
                             resultEl.innerHTML = `<p class="result-label">Result</p><p>${formatted}</p>`;
                         } catch (err) {
                             showModal(`<h3>Error</h3><p>${err.message}</p>`);
+                        } finally {
+                            if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('loading'); }
+                            if (randomBtn) { randomBtn.disabled = false; randomBtn.classList.remove('loading'); }
                         }
                     });
 
                     if (randomBtn) {
                         randomBtn.addEventListener('click', async (e) => {
                             e.preventDefault();
+                            // show loading on random button
+                            randomBtn.disabled = true; randomBtn.classList.add('loading');
                             try {
                                 const resp = await fetch('/random_api');
                                 if (!resp.ok) throw new Error('Failed to fetch sample');
@@ -568,6 +610,8 @@
                                 resultEl.animate([{opacity:0.2, transform:'translateY(6px)'},{opacity:1, transform:'translateY(0)'}], {duration:420, easing:'cubic-bezier(.2,.9,.28,1)'});
                             } catch (err) {
                                 showModal(`<h3>Error</h3><p>${err.message}</p>`);
+                            } finally {
+                                randomBtn.disabled = false; randomBtn.classList.remove('loading');
                             }
                         });
                     }
