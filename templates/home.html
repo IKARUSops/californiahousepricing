@@ -230,6 +230,17 @@
             box-shadow: 0 18px 34px rgba(182, 91, 42, 0.34);
         }
 
+        .actions a.button {
+            display: inline-block;
+            text-decoration: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            background: #eef6f4;
+            color: var(--accent-2);
+            font: 700 0.92rem/1 Arial, sans-serif;
+            border: 1px solid rgba(36,91,87,0.08);
+        }
+
         .actions small {
             color: var(--muted);
             font: 400 0.92rem/1.5 Arial, sans-serif;
@@ -346,6 +357,56 @@
                 justify-content: center;
             }
         }
+        /* Modal popup for results */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(6,18,12,0.48);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 220ms ease, visibility 220ms ease;
+            z-index: 1200;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            width: min(520px, calc(100% - 48px));
+            background: var(--surface-strong);
+            border-radius: 14px;
+            padding: 20px 20px 18px 20px;
+            box-shadow: 0 30px 80px rgba(6,18,12,0.36);
+            transform: translateY(10px);
+            transition: transform 260ms cubic-bezier(.2,.9,.28,1), opacity 220ms ease;
+            opacity: 0;
+            position: relative;
+        }
+
+        .modal-overlay.open .modal {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal .modal-close {
+            position: absolute;
+            right: 12px;
+            top: 8px;
+            border: 0;
+            background: transparent;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .modal h3 { margin: 0 0 8px; }
+        .modal p { margin: 0; font-size: 1.05rem; }
     </style>
 </head>
 <body>
@@ -375,40 +436,41 @@
                     <div class="field-grid">
                         <div class="field">
                             <label for="MedInc">Median income</label>
-                            <input id="MedInc" type="number" step="any" name="MedInc" placeholder="Example: 3.52" required>
+                            <input id="MedInc" type="number" step="any" name="MedInc" placeholder="Example: 3.52" value="{{ prefill.MedInc | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="HouseAge">House age</label>
-                            <input id="HouseAge" type="number" step="any" name="HouseAge" placeholder="Example: 18" required>
+                            <input id="HouseAge" type="number" step="any" name="HouseAge" placeholder="Example: 18" value="{{ prefill.HouseAge | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="AveRooms">Average rooms</label>
-                            <input id="AveRooms" type="number" step="any" name="AveRooms" placeholder="Example: 5.42" required>
+                            <input id="AveRooms" type="number" step="any" name="AveRooms" placeholder="Example: 5.42" value="{{ prefill.AveRooms | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="AveBedrms">Average bedrooms</label>
-                            <input id="AveBedrms" type="number" step="any" name="AveBedrms" placeholder="Example: 1.08" required>
+                            <input id="AveBedrms" type="number" step="any" name="AveBedrms" placeholder="Example: 1.08" value="{{ prefill.AveBedrms | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="Population">Population</label>
-                            <input id="Population" type="number" step="any" name="Population" placeholder="Example: 1200" required>
+                            <input id="Population" type="number" step="any" name="Population" placeholder="Example: 1200" value="{{ prefill.Population | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="AveOccup">Average occupancy</label>
-                            <input id="AveOccup" type="number" step="any" name="AveOccup" placeholder="Example: 3.1" required>
+                            <input id="AveOccup" type="number" step="any" name="AveOccup" placeholder="Example: 3.1" value="{{ prefill.AveOccup | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="Latitude">Latitude</label>
-                            <input id="Latitude" type="number" step="any" name="Latitude" placeholder="Example: 37.77" required>
+                            <input id="Latitude" type="number" step="any" name="Latitude" placeholder="Example: 37.77" value="{{ prefill.Latitude | default('') }}" required>
                         </div>
                         <div class="field">
                             <label for="Longitude">Longitude</label>
-                            <input id="Longitude" type="number" step="any" name="Longitude" placeholder="Example: -122.42" required>
+                            <input id="Longitude" type="number" step="any" name="Longitude" placeholder="Example: -122.42" value="{{ prefill.Longitude | default('') }}" required>
                         </div>
                     </div>
 
                     <div class="actions">
                         <button type="submit">Generate estimate</button>
+                        <button id="random-sample" type="button" class="button">Random sample</button>
                         <small>All fields are required. The model expects numeric values only.</small>
                     </div>
                 </form>
@@ -422,6 +484,96 @@
                     <p>Waiting for input...</p>
                     {% endif %}
                 </div>
+
+                <script>
+                // Modal-enabled AJAX form submit and random sample fetch
+                (function(){
+                    const form = document.querySelector('form');
+                    const resultEl = document.querySelector('.result');
+                    const randomBtn = document.getElementById('random-sample');
+
+                    // Modal elements
+                    const modalOverlay = document.createElement('div');
+                    modalOverlay.id = 'modal-overlay';
+                    modalOverlay.className = 'modal-overlay';
+                    modalOverlay.innerHTML = `
+                        <div class="modal" role="dialog" aria-modal="true">
+                            <button class="modal-close" aria-label="Close">&times;</button>
+                            <div class="modal-body"></div>
+                        </div>`;
+                    document.body.appendChild(modalOverlay);
+                    const modalBody = modalOverlay.querySelector('.modal-body');
+                    const modalClose = modalOverlay.querySelector('.modal-close');
+
+                    function showModal(html) {
+                        modalBody.innerHTML = html;
+                        modalOverlay.classList.add('open');
+                        document.body.style.overflow = 'hidden';
+                    }
+
+                    function closeModal() {
+                        modalOverlay.classList.remove('open');
+                        document.body.style.overflow = '';
+                    }
+
+                    // Close handlers: delegate clicks so dynamically added buttons are handled
+                    modalOverlay.addEventListener('click', (ev) => {
+                        if (ev.target === modalOverlay) return closeModal();
+                        const closeBtn = ev.target.closest && ev.target.closest('.modal-close');
+                        if (closeBtn) return closeModal();
+                    });
+
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(form);
+                        const keys = ['MedInc','HouseAge','AveRooms','AveBedrms','Population','AveOccup','Latitude','Longitude'];
+                        const data = {};
+                        for (const k of keys) data[k] = parseFloat(formData.get(k));
+                        try {
+                            const resp = await fetch('/predict_api', {
+                                method: 'POST', headers: {'Content-Type':'application/json'},
+                                body: JSON.stringify({data})
+                            });
+                            if (!resp.ok) throw new Error('Network response was not ok');
+                            const value = await resp.json();
+                            const num = parseFloat(value);
+                            const outVal = Math.max(0, num);
+                            const formatted = outVal.toLocaleString(undefined, {style:'currency', currency:'USD'});
+                            const html = outVal === 0 ?
+                                `<h3>Result</h3><p>The House price prediction is ${formatted} — <strong>unrealistic</strong> (non-positive estimate).</p>` :
+                                `<h3>Result</h3><p>The House price prediction is ${formatted}</p>`;
+                            // show animated modal (only the top-right cross close button)
+                            showModal(html);
+                            // update inline result too for accessibility
+                            resultEl.innerHTML = `<p class="result-label">Result</p><p>${formatted}</p>`;
+                        } catch (err) {
+                            showModal(`<h3>Error</h3><p>${err.message}</p>`);
+                        }
+                    });
+
+                    if (randomBtn) {
+                        randomBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            try {
+                                const resp = await fetch('/random_api');
+                                if (!resp.ok) throw new Error('Failed to fetch sample');
+                                const prefill = await resp.json();
+                                for (const k in prefill) {
+                                    const el = document.querySelector('[name="'+k+'"]');
+                                    if (el) el.value = prefill[k];
+                                }
+                                // smooth scroll the form into view to preserve context
+                                form.scrollIntoView({behavior: 'smooth', block: 'center'});
+                                // small success animation in the result panel
+                                resultEl.animate([{opacity:0.2, transform:'translateY(6px)'},{opacity:1, transform:'translateY(0)'}], {duration:420, easing:'cubic-bezier(.2,.9,.28,1)'});
+                            } catch (err) {
+                                showModal(`<h3>Error</h3><p>${err.message}</p>`);
+                            }
+                        });
+                    }
+                })();
+                </script>
+                
                 
             </section>
 

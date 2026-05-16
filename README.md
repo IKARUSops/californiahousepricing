@@ -17,5 +17,5 @@ conda create -p venv python==3.12 -y
 Activate environment
 
 ```
-conda activate C:\californiahousepricing\ve
+conda activate C:\californiahousepricing\venv
 ```
